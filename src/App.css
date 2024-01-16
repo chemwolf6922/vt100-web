@@ -22,3 +22,12 @@
   transform: translateX(-50%);
 }
 
+.negative {
+  background-color: white;
+  color: black;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
