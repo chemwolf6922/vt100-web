@@ -2,42 +2,108 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" href="./terminal.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
+    <meta name="theme-color" content="#101a20" />
+    <meta name="description" content="A VT100 console that connects directly to your serial device." />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="stylesheet" href="./index.css" />
+    <script type="module" src="./main.js"></script>
+    <title>VT100 Serial Console</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    <noscript>This serial console requires JavaScript and a browser with Web Serial support.</noscript>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><div><h1>VT100</h1><p>WEB SERIAL CONSOLE</p></div></div>
+      <div class="connection-indicator"><span id="connection-light" class="indicator" aria-hidden="true"></span><span id="connection-status" role="status">Disconnected</span></div>
+    </header>
+    <main>
+      <section class="toolbar" aria-label="Console controls">
+        <button id="connect" class="primary" type="button">Connect serial</button>
+        <button id="disconnect" type="button" disabled>Disconnect</button>
+        <span class="toolbar-divider" aria-hidden="true"></span>
+        <button id="setup" type="button">SET-UP</button>
+        <button id="reset" type="button" title="Reset the terminal display and modes, not the connected computer">Reset terminal</button>
+        <button id="line-feed" type="button">Line Feed</button>
+        <button id="no-scroll" type="button" disabled aria-pressed="false" title="Enable XON/XOFF in connection settings to use NO SCROLL">NO SCROLL</button>
+        <button id="break" type="button" disabled>BREAK</button>
+      </section>
+      <section id="notice" class="notice" role="alert" hidden><span id="notice-text"></span><button id="dismiss-notice" type="button" aria-label="Dismiss message">Dismiss</button></section>
+      <section class="console-panel" aria-label="Terminal display">
+        <div class="console-heading">
+          <span id="mode-status">ANSI / 80 x 24</span>
+          <div class="lights" aria-label="VT100 indicators">
+            <span id="online-indicator" class="status-label">ON LINE</span>
+            <span id="keyboard-lock" class="status-label">KBD</span>
+            <span class="led" id="led-1" aria-label="LED 1 off">L1</span>
+            <span class="led" id="led-2" aria-label="LED 2 off">L2</span>
+            <span class="led" id="led-3" aria-label="LED 3 off">L3</span>
+            <span class="led" id="led-4" aria-label="LED 4 off">L4</span>
+          </div>
+        </div>
+        <div class="terminal-scroll">
+          <div id="terminal" class="terminal cursor-block cursor-blink" tabindex="0" role="group" aria-label="VT100 terminal" aria-describedby="terminal-hint">
+            <div id="screen" class="screen" aria-label="Terminal screen"></div>
+            <textarea id="terminal-input" class="terminal-input" tabindex="-1" aria-label="Terminal keyboard input" aria-controls="screen" autocomplete="off" autocapitalize="off" spellcheck="false" rows="1" cols="1"></textarea>
+          </div>
+        </div>
+        <div class="console-footer"><span id="focus-status">Click the terminal to type</span><span id="traffic-status">RX 0 B / TX 0 B</span></div>
+      </section>
+      <p id="terminal-hint" class="hint">Shift+Tab leaves the terminal. Ctrl+Shift+V pastes; Ctrl+V sends ^V. Select text and Ctrl+C to copy; otherwise Ctrl+C goes to the device.</p>
+      <p class="hint"><strong>Before full-screen Linux apps:</strong> run <code id="host-settings">export TERM=vt100 LC_ALL=C; stty rows 24 cols 80</code> at the shell prompt. Raw serial does not negotiate terminal type, window size, or encoding.</p>
+      <details id="log-panel" class="log-panel">
+        <summary>Raw serial log <span id="log-status">off</span></summary>
+        <div class="log-controls"><button id="toggle-log" type="button">Start log</button><button id="clear-log" type="button">Clear log</button><span>In memory only. RX/TX data can include passwords. Limited to 1 MiB of text.</span></div>
+        <pre id="log" class="log" tabindex="0" aria-label="Raw serial log"></pre>
+      </details>
+    </main>
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    <dialog id="connection-dialog" aria-labelledby="connection-title">
+      <form id="connection-form">
+        <h2 id="connection-title">Connect a serial device</h2>
+        <p>Select the connection parameters, then choose the device in your browser's port chooser.</p>
+        <label class="field">Device<select id="serial-device"><option value="">Choose a device in the browser...</option></select></label>
+        <label class="field">Baud rate<input id="baud-rate" name="baudRate" type="number" list="baud-rates" min="1" max="4294967295" step="1" value="115200" required autofocus /></label>
+        <datalist id="baud-rates"><option value="300"></option><option value="600"></option><option value="1200"></option><option value="2400"></option><option value="4800"></option><option value="9600"></option><option value="19200"></option><option value="38400"></option><option value="57600"></option><option value="115200"></option><option value="230400"></option><option value="460800"></option><option value="921600"></option><option value="1000000"></option><option value="2000000"></option></datalist>
+        <div class="form-grid">
+          <label class="field">Data bits<select id="data-bits"><option value="8">8</option><option value="7">7</option></select></label>
+          <label class="field">Parity<select id="parity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label>
+          <label class="field">Stop bits<select id="stop-bits"><option value="1">1</option><option value="2">2</option></select></label>
+          <label class="field">Flow control<select id="flow-control"><option value="none">None</option><option value="software">XON/XOFF (software)</option><option value="hardware">RTS/CTS (hardware)</option></select></label>
+        </div>
+        <p class="hint">The Raspberry Pi setup uses 115200 baud, 8-N-1, no flow control. Select COM7 in the browser chooser the first time. Previously authorized devices can be selected above; the browser exposes USB IDs rather than COM names.</p>
+        <p id="connection-form-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions"><button id="cancel-connect" type="button">Cancel</button><button class="primary" type="submit">Select device and connect</button></div>
+      </form>
+    </dialog>
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <dialog id="setup-dialog" aria-labelledby="setup-title">
+      <form id="setup-form">
+        <h2 id="setup-title">VT100 SET-UP</h2>
+        <p>Host-controlled settings show their current values. Save stores power-on defaults in this browser; Reset terminal recalls them.</p>
+        <div class="form-grid">
+          <label class="field">Columns<select id="setup-columns"><option value="80">80</option><option value="132">132</option></select></label>
+          <label class="field">Protocol<select id="setup-protocol"><option value="ansi">ANSI (VT100)</option><option value="vt52">VT52</option></select></label>
+          <label class="field">Cursor<select id="setup-cursor"><option value="block">Block</option><option value="underline">Underline</option></select></label>
+          <label class="field">Answerback (up to 20 ASCII characters)<input id="setup-answerback" maxlength="20" autocomplete="off" spellcheck="false" /></label>
+        </div>
+        <div class="check-grid">
+          <label><input id="setup-wrap" type="checkbox" /> Autowrap</label>
+          <label><input id="setup-repeat" type="checkbox" /> Auto repeat</label>
+          <label><input id="setup-newline" type="checkbox" /> Newline mode (CR + LF)</label>
+          <label><input id="setup-reverse" type="checkbox" /> Reverse screen</label>
+          <label><input id="setup-smooth" type="checkbox" /> Smooth scrolling</label>
+          <label><input id="setup-cursor-blink" type="checkbox" /> Blink cursor</label>
+          <label><input id="setup-bell" type="checkbox" /> Audible bell</label>
+          <label><input id="setup-keyclick" type="checkbox" /> Keyclick</label>
+          <label><input id="setup-margin-bell" type="checkbox" /> Margin bell</label>
+          <label><input id="setup-local" type="checkbox" /> LOCAL (closes serial connection)</label>
+        </div>
+        <fieldset class="tabs-controls"><legend>Tab stops at the current cursor</legend><button id="set-tab" type="button">Set tab</button><button id="clear-tab" type="button">Clear tab</button><button id="clear-tabs" type="button">Clear all</button><button id="default-tabs" type="button">Every 8 columns</button><p id="tab-status" class="hint"></p></fieldset>
+        <p class="hint">Numeric keypad + represents the VT100 keypad comma. PF1-PF4 use F1-F4. In VT100 mode, F5-F10 use the keypad aliases expected by ncurses. Shift+BREAK is a long break; it can affect modem signals.</p>
+        <p id="setup-form-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions"><button id="factory-settings" type="button">Factory defaults</button><span class="spacer"></span><button id="close-setup" type="button">Cancel</button><button type="submit" value="apply">Apply</button><button id="save-setup" class="primary" type="submit" value="save">Save</button></div>
+      </form>
+    </dialog>
   </body>
 </html>

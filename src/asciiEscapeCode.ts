@@ -35,7 +35,12 @@ const asciiEscapeCodes:{[key:number]:string} = {
 };
 
 function asciiEscapePrint(char:number):string{
-    return asciiEscapeCodes[char] ?? String.fromCharCode(char);
+    if(!Number.isInteger(char) || char < 0 || char > 0xff){
+        throw new RangeError('The serial log requires a byte from 0 to 255.');
+    }
+    return asciiEscapeCodes[char] ?? (char >= 0x80
+        ? `\\x${char.toString(16).padStart(2, '0')}`
+        : String.fromCharCode(char));
 }
 
 function isAsciiEscapeCode(char:number):boolean{
