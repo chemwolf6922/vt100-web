@@ -51,11 +51,6 @@
       </section>
       <p id="terminal-hint" class="hint">Shift+Tab leaves the terminal. Ctrl+Shift+V pastes; Ctrl+V sends ^V. Select text and Ctrl+C to copy; otherwise Ctrl+C goes to the device.</p>
       <p class="hint"><strong>Before full-screen Linux apps:</strong> run <code id="host-settings">export TERM=vt100 LC_ALL=C; stty rows 24 cols 80</code> at the shell prompt. Raw serial does not negotiate terminal type, window size, or encoding.</p>
-      <details id="log-panel" class="log-panel">
-        <summary>Raw serial log <span id="log-status">off</span></summary>
-        <div class="log-controls"><button id="toggle-log" type="button">Start log</button><button id="clear-log" type="button">Clear log</button><span>In memory only. RX/TX data can include passwords. Limited to 1 MiB of text.</span></div>
-        <pre id="log" class="log" tabindex="0" aria-label="Raw serial log"></pre>
-      </details>
     </main>
 
     <dialog id="connection-dialog" aria-labelledby="connection-title">

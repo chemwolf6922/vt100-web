@@ -33,7 +33,7 @@ interface SerialCallbacks {
   onState: (state: ConnectionState) => void;
   onError: (error: Error) => void;
   onFlow?: (state: FlowState) => void;
-  onTraffic?: (direction: 'rx' | 'tx', bytes: Uint8Array) => void;
+  onTraffic?: (direction: 'rx' | 'tx', byteCount: number) => void;
 }
 
 // Web Serial is not included in all versions of lib.dom.d.ts.
@@ -727,7 +727,7 @@ export default class SerialConnection {
           }
           const raw = result.done ? undefined : result.value;
           if (raw && raw.byteLength > 0 && this.session === session) {
-            this.callback(session, 'onTraffic', () => this.callbacks.onTraffic?.('rx', raw.slice()));
+            this.callback(session, 'onTraffic', () => this.callbacks.onTraffic?.('rx', raw.byteLength));
           }
           if (!this.live(session)) break;
           if (result.done) {
@@ -889,7 +889,7 @@ export default class SerialConnection {
           const writing = writer.write(item.bytes).then(
             () => {
               if (this.session === session) {
-                this.callback(session, 'onTraffic', () => this.callbacks.onTraffic?.('tx', item.bytes.slice()));
+                this.callback(session, 'onTraffic', () => this.callbacks.onTraffic?.('tx', item.bytes.byteLength));
               }
             },
             (cause: unknown) => {

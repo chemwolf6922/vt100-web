@@ -5,7 +5,6 @@ import SerialConnection, { DEFAULT_SERIAL_SETTINGS, serialSupportError, validate
 import type { ConnectionState, FlowState, SerialSettings } from './serial.js';
 import TerminalView from './terminalView.js';
 import type { CursorAppearance } from './terminalView.js';
-import { asciiEscapePrint } from './asciiEscapeCode.js';
 
 interface Preferences {
   terminal: TerminalSettings;
@@ -32,12 +31,9 @@ const connectionDialog = element('#connection-dialog', HTMLDialogElement);
 const setupDialog = element('#setup-dialog', HTMLDialogElement);
 const notice = label('notice');
 const noticeText = label('notice-text');
-const logPanel = element('#log-panel', HTMLDetailsElement);
-const logElement = label('log');
 const listeners = new AbortController();
 const eventOptions = { signal: listeners.signal };
 const storageKey = 'vt100-web.settings.v1';
-const maximumLogLength = 1024 * 1024;
 const supportError = serialSupportError();
 let loadWarning = '';
 let savedPreferences = loadPreferences();
@@ -55,11 +51,6 @@ let disposed = false;
 let renderingFailed = false;
 let receivedBytes = 0;
 let transmittedBytes = 0;
-let logging = false;
-let logParts: string[] = [];
-let logLength = 0;
-let logTruncated = false;
-let logDirty = false;
 let draftTabs: number[] = [];
 let setupPause: Promise<boolean> | null = null;
 let connectionFormGeneration = 0;
@@ -93,10 +84,9 @@ connection = new SerialConnection({
     flow = state;
     updateConnectionUI();
   },
-  onTraffic(direction, bytes) {
-    if (direction === 'rx') receivedBytes += bytes.length;
-    else transmittedBytes += bytes.length;
-    if (logging) appendLog(direction, bytes);
+  onTraffic(direction, byteCount) {
+    if (direction === 'rx') receivedBytes += byteCount;
+    else transmittedBytes += byteCount;
     requestRender();
   },
 });
@@ -264,12 +254,6 @@ function render(): void {
     led.setAttribute('aria-label', `LED ${index + 1} ${on ? 'on' : 'off'}`);
   });
   label('traffic-status').textContent = `RX ${receivedBytes.toLocaleString()} B / TX ${transmittedBytes.toLocaleString()} B`;
-  if (logDirty && logPanel.open) {
-    const atEnd = logElement.scrollHeight - logElement.scrollTop - logElement.clientHeight < 30;
-    logElement.textContent = (logTruncated ? '[Earlier log text truncated at the 1 MiB limit]\n' : '') + logParts.join('');
-    if (atEnd) logElement.scrollTop = logElement.scrollHeight;
-    logDirty = false;
-  }
 }
 
 function updateConnectionUI(): void {
@@ -336,25 +320,6 @@ function sendKeyboard(bytes: Uint8Array): void {
   } else {
     runAsync(serial.send(bytes));
   }
-}
-
-function appendLog(direction: 'rx' | 'tx', bytes: Uint8Array): void {
-  let text = `${direction.toUpperCase()} `;
-  for (const byte of bytes) text += asciiEscapePrint(byte);
-  text += '\n';
-  if (text.length > maximumLogLength) {
-    text = text.slice(-maximumLogLength);
-    logTruncated = true;
-  }
-  logParts.push(text);
-  logLength += text.length;
-  while (logLength > maximumLogLength) {
-    const removed = logParts.shift();
-    if (removed === undefined) throw new Error('Raw log length accounting failed.');
-    logLength -= removed.length;
-    logTruncated = true;
-  }
-  logDirty = true;
 }
 
 function audioError(error: unknown): void {
@@ -656,19 +621,6 @@ button('reset').addEventListener('click', () => {
 button('line-feed').addEventListener('click', () => { keyboard.sendLineFeed(); focusTerminal(); }, eventOptions);
 button('no-scroll').addEventListener('click', toggleNoScroll, eventOptions);
 button('break').addEventListener('click', (event) => runAsync(sendBreak(event.shiftKey)), eventOptions);
-button('toggle-log').addEventListener('click', () => {
-  logging = !logging;
-  button('toggle-log').textContent = logging ? 'Stop log' : 'Start log';
-  label('log-status').textContent = logging ? 'recording RX/TX' : 'off';
-}, eventOptions);
-button('clear-log').addEventListener('click', () => {
-  logParts = [];
-  logLength = 0;
-  logTruncated = false;
-  logDirty = true;
-  requestRender();
-}, eventOptions);
-logPanel.addEventListener('toggle', requestRender, eventOptions);
 terminalElement.addEventListener('pointerup', () => {
   prepareSound();
   if (!selectionInTerminal()) focusTerminal();

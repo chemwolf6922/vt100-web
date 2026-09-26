@@ -9,7 +9,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, input, select { font: inherit; }
-button, input, select, summary { -webkit-tap-highlight-color: transparent; }
+button, input, select { -webkit-tap-highlight-color: transparent; }
 button {
   color: #dbe5e9;
   background: #202f38;
@@ -104,12 +104,6 @@ h1 { font-size: 24px; letter-spacing: 3px; line-height: 1; margin: 0 0 7px; font
 
 .hint { color: #91a7b1; font-size: 12px; line-height: 1.6; margin: 10px 0; }
 code { font-family: ui-monospace, Consolas, monospace; color: #bddbd0; }
-.log-panel { margin: 20px 0 30px; border-top: 1px solid #34454e; padding-top: 13px; }
-summary { cursor: pointer; font-size: 13px; color: #a4b8c1; }
-summary span { color: #798e99; font-size: 11px; margin-left: 8px; }
-.log-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 13px 0 8px; }
-.log-controls span { font-size: 11px; color: #91a7b1; margin-left: 4px; }
-.log { padding: 12px; height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.6 ui-monospace, Consolas, monospace; background: #080f13; border: 1px solid #34454e; border-radius: 5px; color: #bed0d8; }
 
 dialog { width: min(620px, calc(100% - 32px)); max-height: calc(100% - 40px); padding: 25px; color: #d6e0e5; background: #17242c; border: 1px solid #536873; border-radius: 9px; box-shadow: 0 24px 100px #0009; }
 dialog::backdrop { background: #0009; }

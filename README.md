@@ -74,9 +74,6 @@ restart the application.
 | **NO SCROLL** | Pause or resume incoming output with XON/XOFF flow control enabled. |
 | **BREAK** | Send a serial break. Shift sends a long break, which may disconnect or reset attached equipment. |
 
-Expand **Raw serial log** to start, stop, or clear logging. Logs are held in
-memory and may contain passwords; keep logging off while entering credentials.
-
 ## Publish with GitHub Pages
 
 Pushes to `main` by `chemwolf6922` build and publish automatically. That account
