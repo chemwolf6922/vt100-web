@@ -79,8 +79,9 @@ memory and may contain passwords; keep logging off while entering credentials.
 
 ## Publish with GitHub Pages
 
-Push to `main` to build and publish automatically. You can also run
-**Build and deploy Pages** from the repository's **Actions** tab.
+Pushes to `main` by `chemwolf6922` build and publish automatically. That account
+can also run **Build and deploy Pages** from the repository's **Actions** tab.
 
-For a fork, first set **Settings > Pages > Build and deployment > Source** to
-**GitHub Actions**.
+For a fork, update the account and repository checks in the
+[workflow](.github/workflows/pages.yml), then set **Settings > Pages > Build and
+deployment > Source** to **GitHub Actions**.
