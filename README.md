@@ -5,6 +5,8 @@ browser's Web Serial API. No React, runtime npm dependencies, CDN resources, or
 server-side serial proxy. The device remains attached to the computer running the
 browser, not necessarily the computer serving this project.
 
+**Hosted console:** <https://chemwolf6922.github.io/vt100-web/>
+
 ## Run
 
 Keep your existing Node installation. This project was developed using Node
@@ -35,6 +37,34 @@ npm run build
 The build emits native ES modules and copies the static assets. Deploy the
 contents of `build/` together to an HTTPS static server. Source maps are included.
 No service worker caches an obsolete version of the application.
+
+## GitHub Pages deployment
+
+[Build and deploy Pages](.github/workflows/pages.yml) builds pull requests to
+`main` and deploys successful pushes to `main`. It can also be started manually
+from the repository's **Actions** tab; only runs on `main` can publish.
+
+The pipeline uses Node **22.14.0**, enforces the dependency age/download/integrity
+policy before installation, runs `npm ci` with lifecycle scripts disabled,
+verifies registry signatures, checks published advisories, and runs the strict
+TypeScript build. It does not install or run unit-test frameworks.
+
+Only `build/` is uploaded. Deployment uses GitHub's built-in Pages/OIDC
+permissions in a separate `github-pages` environment; no personal access token,
+deploy key, or `gh-pages` branch is required. Pull requests cannot publish.
+Official GitHub Actions are pinned to full commit hashes, including the
+artifact-upload action referenced by the Pages uploader.
+
+For a new repository or fork, set **Settings > Pages > Build and deployment >
+Source** to **GitHub Actions** once, then run the workflow on `main`. The site is
+published at `https://<owner>.github.io/<repository>/`. Relative asset and module
+URLs support that project subpath without a separate production build.
+
+The hosted site uses HTTPS, so Web Serial can access devices attached to your
+browser's computer. Serial permissions and saved settings are origin-specific:
+you must authorize the device again on the hosted site even if it was already
+authorized at localhost. The pipeline never connects to hardware or replaces the
+real-Pi validation documented below.
 
 ## Connect
 
